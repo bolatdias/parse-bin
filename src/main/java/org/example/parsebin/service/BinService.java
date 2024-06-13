@@ -1,19 +1,25 @@
 package org.example.parsebin.service;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.parsebin.model.Bin;
 import org.example.parsebin.payload.BinAddRequest;
+import org.example.parsebin.payload.BinResponse;
 import org.example.parsebin.repository.BinRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class BinService {
     private final BinRepository binRepository;
     private final HashGeneratorService hashGeneratorService;
+    private final TrendingService trendingService;
+    private final ObjectMapper objectMapper;
 
     public void saveBin(BinAddRequest request) {
         Bin bin = new Bin();
@@ -33,9 +39,24 @@ public class BinService {
 
         if (bin.getDeleteTime().isBefore(now)) {
             binRepository.delete(bin);
-            bin = null;
+            return null;
         }
+
+
+        BinResponse response = new BinResponse();
+        response.setText(bin.getText());
+        response.setId(bin.getId());
+        response.setUrl(bin.getUrl());
+        try {
+            trendingService.incrementScore(String.valueOf(objectMapper.writeValueAsString(response)));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
         return bin;
     }
 
+    public Set<String> getTrendingBins(int topN) {
+        return trendingService.getTrendingBins(topN);
+    }
 }

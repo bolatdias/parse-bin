@@ -1,12 +1,10 @@
 package org.example.parsebin.service;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.parsebin.model.Bin;
 import org.example.parsebin.payload.BinAddRequest;
-import org.example.parsebin.payload.BinResponse;
 import org.example.parsebin.repository.BinRepository;
 import org.springframework.stereotype.Service;
 
@@ -42,21 +40,13 @@ public class BinService {
             return null;
         }
 
+        trendingService.incrementScore(bin);
 
-        BinResponse response = new BinResponse();
-        response.setText(bin.getText());
-        response.setId(bin.getId());
-        response.setUrl(bin.getUrl());
-        try {
-            trendingService.incrementScore(String.valueOf(objectMapper.writeValueAsString(response)));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
 
         return bin;
     }
 
-    public Set<String> getTrendingBins(int topN) {
+    public Set<Object> getTrendingBins(int topN) {
         return trendingService.getTrendingBins(topN);
     }
 }

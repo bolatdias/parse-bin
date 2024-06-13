@@ -28,7 +28,7 @@ public class BinController {
     }
 
     @GetMapping("/trending/")
-        public Set<String> getBinTrending() {
+        public Set<Object> getBinTrending() {
         return binService.getTrendingBins(10);
     }
 }

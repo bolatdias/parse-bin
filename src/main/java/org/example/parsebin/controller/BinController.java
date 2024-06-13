@@ -21,6 +21,7 @@ public class BinController {
 
     @GetMapping("/{binUrl}")
     public Bin getBin(@PathVariable String binUrl) {
+
         return binService.getBinByURL(binUrl);
     }
 }

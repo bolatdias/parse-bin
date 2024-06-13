@@ -1,46 +1,60 @@
 package org.example.parsebin.service;
 
+import org.example.parsebin.repository.BinRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 import java.util.Base64;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 @Service
 public class HashGeneratorService {
 
     private final Base64.Encoder base64Encoder = Base64.getEncoder();
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final ExecutorService executorService;
+    private final BinRepository binRepository;
+    JedisPool jedisPool = new JedisPool("localhost", 6379);
 
 
-    @Value(value = "${app.hashGenerateSize}")
+    @Value("${app.hashGenerateSize}")
     private int size;
 
-    public HashGeneratorService(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-        this.executorService = Executors.newFixedThreadPool(10);
+    public HashGeneratorService(BinRepository binRepository) {
+        this.binRepository = binRepository;
     }
 
     public void generateHash() {
-        for (int i = 0; i < size; i++) {
-            executorService.submit(() -> {
-                String hash = base64Encoder.encodeToString(String.valueOf(size).getBytes());
-                redisTemplate.opsForList().leftPush("hashQueue", hash);
-            });
+        try (Jedis jedis = jedisPool.getResource()) {
+            Long startId = binRepository.getNextId();
+            for (int i = 0; i < size; i++) {
+                Long id = startId + i;
+                String key = "binHash:%d".formatted(id);
+                String hash = getHash(id);
+                jedis.set(key, hash);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public String getNextHash() {
-        Future<String> futureHash = executorService.submit(() -> (String) redisTemplate.opsForList().rightPop("hashQueue"));
-        try {
-            return futureHash.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    private String getHash(Long id) {
+        return base64Encoder.encodeToString(String.valueOf(id).getBytes());
+    }
+
+    public String getCachedHash(Long id) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            String key = "binHash:%d".formatted(id);
+            String raw = jedis.get(key);
+
+            if (raw != null) {
+                jedis.del(key);
+                return raw;
+            }
+            generateHash();
+            System.out.println("Hash generated");
+            return getHash(id);
         }
     }
+
+
 }

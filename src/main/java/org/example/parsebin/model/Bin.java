@@ -4,7 +4,9 @@ package org.example.parsebin.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.redis.core.RedisHash;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 @Entity

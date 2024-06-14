@@ -1,7 +1,6 @@
 package org.example.parsebin.service;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.parsebin.model.Bin;
 import org.example.parsebin.payload.BinAddRequest;
@@ -17,16 +16,19 @@ public class BinService {
     private final BinRepository binRepository;
     private final HashGeneratorService hashGeneratorService;
     private final TrendingService trendingService;
-    private final ObjectMapper objectMapper;
+
+    private final static String BIN_KEY = "bin:%s";
 
     public void saveBin(BinAddRequest request) {
         Bin bin = new Bin();
         bin.setText(request.getText());
         bin.setDeleteTime(request.getDeleteTime());
-        bin = binRepository.save(bin);
-        bin.setUrl(hashGeneratorService.getCachedHash(bin.getId()));
+
+        Long id = binRepository.getNextId();
+        bin.setUrl(hashGeneratorService.getCachedHash(id));
         binRepository.save(bin);
     }
+
 
     public Bin getBinByURL(String url) {
         Bin bin = binRepository.findByUrl(url).orElseThrow(

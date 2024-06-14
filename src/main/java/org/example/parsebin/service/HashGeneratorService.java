@@ -1,12 +1,11 @@
 package org.example.parsebin.service;
 
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.async.RedisAsyncCommands;
 import lombok.RequiredArgsConstructor;
 import org.example.parsebin.repository.BinRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 import java.util.Base64;
 import java.util.concurrent.ExecutorService;
@@ -18,7 +17,7 @@ public class HashGeneratorService {
 
     private final Base64.Encoder base64Encoder = Base64.getEncoder();
     private final BinRepository binRepository;
-    private final RedisClient redisClient;
+    private final JedisPool jedisPool = new JedisPool("localhost", 6379);
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     @Value("${app.hashGenerateSize}")
@@ -26,17 +25,16 @@ public class HashGeneratorService {
 
 
     public void generateHash() {
-        try (StatefulRedisConnection<String, String> connection = redisClient.connect()) {
-            RedisAsyncCommands<String, String> asyncCommands = connection.async();
+        try (Jedis jedis = jedisPool.getResource()) {
 
             Long startId = binRepository.getNextId();
-            for (int i = 1; i < size; i++) {
+            for (int i = 1; i <= size; i++) {
                 Long id = startId + i;
                 String key = "binHash:%d".formatted(id);
                 String hash = getHash(id);
-                asyncCommands.set(key, hash);
+                jedis.set(key, hash);
             }
-            executor.shutdown();
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -47,13 +45,12 @@ public class HashGeneratorService {
     }
 
     public String getCachedHash(Long id) {
-        try (StatefulRedisConnection<String, String> connection = redisClient.connect()) {
-            RedisAsyncCommands<String, String> asyncCommands = connection.async();
+        try (Jedis jedis = jedisPool.getResource()) {
             String key = "binHash:%d".formatted(id);
-            String raw = asyncCommands.get(key).get();
+            String raw = jedis.get(key);
 
             if (raw != null) {
-                asyncCommands.del(key);
+                jedis.del(key);
                 return raw;
             }
             generateHash();

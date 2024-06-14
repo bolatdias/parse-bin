@@ -27,7 +27,7 @@ public class TrendingService {
         return zSetOperations.reverseRange(TRENDING_KEY, 0, topN - 1);
     }
 
-    @Scheduled(fixedRate = 1000*60*10)  // 600000 milliseconds = 10 minutes
+    @Scheduled(fixedRate = 1000*60*10)
     private void trimToMaxSize() {
         Long size = zSetOperations.zCard(TRENDING_KEY);
         if (size != null && size > MAX_SIZE) {

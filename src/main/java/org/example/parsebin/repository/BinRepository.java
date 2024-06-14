@@ -19,8 +19,8 @@ public interface BinRepository extends JpaRepository<Bin, Long> {
     @Query("DELETE FROM Bin b WHERE b.deleteTime<:now")
     void deleteExpired(OffsetDateTime now);
 
-    @Query(value = "SELECT nextval('bin_sequence')", nativeQuery = true)
-    long getNextId();
+    @Query(value = "SELECT last_value FROM bin_sequence", nativeQuery = true)
+    Long getNextId();
 
     public Optional<Bin> findByUrl(String url);
 }

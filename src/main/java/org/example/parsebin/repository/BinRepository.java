@@ -23,4 +23,6 @@ public interface BinRepository extends JpaRepository<Bin, Long> {
     Long getNextId();
 
     public Optional<Bin> findByUrl(String url);
+
+    public boolean existsBinByUrl(String url);
 }

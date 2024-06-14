@@ -28,7 +28,7 @@ public class HashGeneratorService {
         try (Jedis jedis = jedisPool.getResource()) {
 
             Long startId = binRepository.getNextId();
-            for (int i = 1; i <= size; i++) {
+            for (int i = 0; i <= size; i++) {
                 Long id = startId + i;
                 String key = "binHash:%d".formatted(id);
                 String hash = getHash(id);

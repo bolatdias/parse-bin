@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-
 @Service
 @RequiredArgsConstructor
 public class CloudStorageService {
@@ -18,19 +16,14 @@ public class CloudStorageService {
     private String BUCKET_NAME;
 
 
-    public void uploadFile(String objectName, String content) {
+    public String uploadFile(String objectName, String content) {
         objectName += ".txt";
         Blob blob = storage.create(
                 Blob.newBuilder(BUCKET_NAME, objectName).build(),
                 content.getBytes()
         );
-        System.out.println("File uploaded to bucket " + BUCKET_NAME + " as " + objectName);
+        System.out.println("File uploaded to bucket " + BUCKET_NAME + " as " + blob.getSelfLink());
+        return blob.getMediaLink();
     }
 
-
-    public String downloadFile(String objectName) {
-        objectName += ".txt";
-        Blob blob = storage.get(BUCKET_NAME, objectName);
-        return new String(blob.getContent(), StandardCharsets.UTF_8);
-    }
 }

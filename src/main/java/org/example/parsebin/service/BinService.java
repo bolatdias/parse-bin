@@ -1,6 +1,5 @@
 package org.example.parsebin.service;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.parsebin.model.Bin;
@@ -31,10 +30,11 @@ public class BinService {
 
         Long id = binRepository.getNextId();
         String hashed = hashGeneratorService.getCachedHash(id);
+        String mediaLink = cloudService.uploadFile(hashed, request.getText());
         bin.setUrl(hashed);
-        binRepository.save(bin);
+        bin.setMediaLink(mediaLink);
 
-        cloudService.uploadFile(hashed, request.getText());
+        binRepository.save(bin);
     }
 
 
@@ -48,20 +48,13 @@ public class BinService {
             if (raw != null) {
                 bin = objectMapper.readValue(raw, Bin.class);
                 return checkTime(bin, jedis, key);
-
-            } else if (checkURL(url)) {
-                bin = getBinFromBD(url);
-                bin.setText(cloudService.downloadFile(url));
-            } else {
-                return null;
             }
 
 
+            bin = getBinFromBD(url);
             System.out.println("Check 2");
             String binStr = objectMapper.writeValueAsString(bin);
             jedis.set(key, binStr);
-
-            trendingService.incrementScore(bin);
             return checkTime(bin, jedis, key);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -75,10 +68,11 @@ public class BinService {
             jedis.del(Key);
             return null;
         }
+        trendingService.incrementScore(bin);
         return bin;
     }
 
-    public Bin getBinFromBD(String url) {
+    private Bin getBinFromBD(String url) {
         return binRepository.findByUrl(url).orElseThrow();
     }
 

@@ -15,6 +15,8 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 public class HashGeneratorService {
 
+    public static final String BIN_HASH_KEY = "binHash:%d";
+    public static final int EXPIRE_SECONDS = 600;
     private final Base64.Encoder base64Encoder = Base64.getEncoder();
     private final BinRepository binRepository;
     private final JedisPool jedisPool = new JedisPool("localhost", 6379);
@@ -30,9 +32,9 @@ public class HashGeneratorService {
             Long startId = binRepository.getNextId();
             for (int i = 0; i <= size; i++) {
                 Long id = startId + i;
-                String key = "binHash:%d".formatted(id);
+                String key = BIN_HASH_KEY.formatted(id);
                 String hash = getHash(id);
-                jedis.set(key, hash);
+                jedis.setex(key, EXPIRE_SECONDS, hash);
             }
 
         } catch (Exception e) {

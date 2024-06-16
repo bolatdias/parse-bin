@@ -15,13 +15,13 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class BinService {
+    public static final int BIN_EXPIRE_SECONDS = 60;
     private final BinRepository binRepository;
     private final HashGeneratorService hashGeneratorService;
     private final TrendingService trendingService;
     private final CloudStorageService cloudService;
     private final JedisPool jedisPool = new JedisPool("localhost", 6379);
     private final ObjectMapper objectMapper;
-
     private final static String BIN_KEY = "bin:%s";
 
     public void saveBin(BinAddRequest request) {
@@ -40,7 +40,7 @@ public class BinService {
 
     public Bin getBinByURL(String url) {
         try (Jedis jedis = jedisPool.getResource()) {
-            String key = "bin:%s".formatted(url);
+            String key = BIN_KEY.formatted(url);
             String raw = jedis.get(key);
 
             System.out.println("Check 1");
@@ -54,7 +54,7 @@ public class BinService {
             bin = getBinFromBD(url);
             System.out.println("Check 2");
             String binStr = objectMapper.writeValueAsString(bin);
-            jedis.set(key, binStr);
+            jedis.setex(key, BIN_EXPIRE_SECONDS,binStr);
             return checkTime(bin, jedis, key);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -76,9 +76,6 @@ public class BinService {
         return binRepository.findByUrl(url).orElseThrow();
     }
 
-    public boolean checkURL(String url) {
-        return binRepository.existsBinByUrl(url);
-    }
 
     public Set<Object> getTrendingBins(int topN) {
         return trendingService.getTrendingBins(topN);

@@ -11,8 +11,9 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/bins/")
+@RequestMapping("/bins")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class BinController {
     private final BinService binService;
 
@@ -27,7 +28,7 @@ public class BinController {
         return binService.getBinByURL(binUrl);
     }
 
-    @GetMapping("/trending/")
+    @GetMapping("/trending")
         public Set<Object> getBinTrending() {
         return binService.getTrendingBins(10);
     }
